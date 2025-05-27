@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::alternative::Alternative;
 
 use super::*;
@@ -72,7 +74,7 @@ fn altshell_to_shell<C: ShapeOpsCurve<S>, S: ShapeOpsSurface>(
     )
 }
 
-fn process_one_pair_of_shells<C: ShapeOpsCurve<S>, S: ShapeOpsSurface>(
+fn process_one_pair_of_shells<C: ShapeOpsCurve<S> + Debug, S: ShapeOpsSurface + Debug>(
     shell0: &Shell<Point3, C, S>,
     shell1: &Shell<Point3, C, S>,
     tol: f64,
@@ -132,7 +134,7 @@ fn process_one_pair_of_shells<C: ShapeOpsCurve<S>, S: ShapeOpsSurface>(
 }
 
 /// AND operation between two solids.
-pub fn and<C: ShapeOpsCurve<S>, S: ShapeOpsSurface>(
+pub fn and<C: ShapeOpsCurve<S> + Debug, S: ShapeOpsSurface + Debug>(
     solid0: &Solid<Point3, C, S>,
     solid1: &Solid<Point3, C, S>,
     tol: f64,
@@ -155,7 +157,7 @@ pub fn and<C: ShapeOpsCurve<S>, S: ShapeOpsSurface>(
 }
 
 /// OR operation between two solids.
-pub fn or<C: ShapeOpsCurve<S>, S: ShapeOpsSurface>(
+pub fn or<C: ShapeOpsCurve<S> + Debug, S: ShapeOpsSurface + Debug>(
     solid0: &Solid<Point3, C, S>,
     solid1: &Solid<Point3, C, S>,
     tol: f64,

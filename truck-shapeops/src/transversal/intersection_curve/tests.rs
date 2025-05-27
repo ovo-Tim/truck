@@ -102,3 +102,15 @@ fn collide_parabola() {
         assert_near!(pt.distance(Point3::origin()) * 0.5, f64::sqrt(0.5) * 0.5);
     }
 }
+
+#[test]
+fn test_intersection_curves_on_overlapping_squares() {
+    use truck_modeling::*;
+    let v = builder::vertex(Point3::origin());
+    let e: Edge = builder::tsweep(&v, Vector3::unit_x());
+    let f: Face = builder::tsweep(&e, Vector3::unit_y());
+
+    let v2 = builder::vertex(Point3::new(0.5, 0.5, 1.0));
+    let w2: Edge = builder::tsweep(&v2, Vector3::unit_x());
+    let f2: Face = builder::tsweep(&w2, Vector3::unit_y());
+}

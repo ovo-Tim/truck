@@ -1,5 +1,7 @@
 #![allow(clippy::many_single_char_names)]
 
+use std::fmt::Debug;
+
 use super::*;
 use rustc_hash::FxHashMap as HashMap;
 use truck_base::cgmath64::*;
@@ -440,6 +442,21 @@ pub struct LoopsStoreQuadruple<C> {
     pub poly_loops_store1: LoopsStore<Point3, PolylineCurve>,
 }
 
+fn is_coplanar<S>(surface1: &S, surface2: &S) -> bool
+where
+    S: ParametricSurface3D + SearchNearestParameter<D2, Point = Point3>,
+{
+    let norm1 = surface1.normal(0.0, 0.0).normalize();
+    let norm2 = surface2.normal(0.0, 0.0).normalize();
+    if norm1 != norm2 {
+        return false;
+    }
+    if !(surface1.subs(0.0, 0.0) - surface2.subs(0.0, 0.0)).dot(norm1).so_small() {
+        return false;
+    }
+    true
+}
+
 pub fn create_loops_stores<C, S>(
     geom_shell0: &Shell<Point3, C, S>,
     poly_shell0: &Shell<Point3, PolylineCurve, Option<PolygonMesh>>,
@@ -450,8 +467,9 @@ where
     C: SearchNearestParameter<D1, Point = Point3>
         + SearchParameter<D1, Point = Point3>
         + Cut<Point = Point3, Vector = Vector3>
-        + From<IntersectionCurve<PolylineCurve, S, S>>,
-    S: ParametricSurface3D + SearchNearestParameter<D2, Point = Point3>,
+        + From<IntersectionCurve<PolylineCurve, S, S>>
+        + Debug,
+    S: ParametricSurface3D + SearchNearestParameter<D2, Point = Point3> + Debug,
 {
     let mut geom_loops_store0: LoopsStore<_, _> = geom_shell0.face_iter().collect();
     let mut poly_loops_store0: LoopsStore<_, _> = poly_shell0.face_iter().collect();
@@ -468,6 +486,34 @@ where
             let surface1 = geom_shell1[face_index1].surface();
             let polygon0 = poly_shell0[face_index0].surface()?;
             let polygon1 = poly_shell1[face_index1].surface()?;
+
+            // if is_coplanar(&surface0, &surface1) {
+
+            //     // println!("Coplanar surfaces:  {:?} {:?}", surface0, surface1);
+            //     let v1 = Vertex::new(Point3::new(0.5, 0.5, 1.0));
+            //     let v2 = Vertex::new(Point3::new(0.5, 1.0, 1.0));
+            //     let v3 = Vertex::new(Point3::new(1.0, 0.5, 1.0));
+            //     let v4 = Vertex::new(Point3::new(1.0, 1.0, 1.0));
+            //     let curve1 = PolylineCurve::from(vec![v1.point(), v2.point()]);
+            //     let curve2 = PolylineCurve::from(vec![v1.point(), v3.point()]);
+            //     let curve3 = PolylineCurve::from(vec![v2.point(), v4.point()]);
+            //     let curve4 = PolylineCurve::from(vec![v3.point(), v4.point()]);
+
+            //     let edge1 = Edge::new(&v1, &v2, curve1.into());
+            //     let edge2 = Edge::new(&v1, &v3, curve2.into());
+            //     let edge3 = Edge::new(&v2, &v4, curve3.into());
+            //     let edge4 = Edge::new(&v3, &v4, curve4.into());
+
+            //     geom_loops_store0[face_index0].add_edge(edge1.clone(), ShapesOpStatus::Or);
+            //     geom_loops_store1[face_index1].add_edge(edge1, ShapesOpStatus::Or);
+            //     geom_loops_store0[face_index0].add_edge(edge2.clone(), ShapesOpStatus::Or);
+            //     geom_loops_store1[face_index1].add_edge(edge2, ShapesOpStatus::Or);
+            //     geom_loops_store0[face_index0].add_edge(edge3.clone(), ShapesOpStatus::Or);
+            //     geom_loops_store1[face_index1].add_edge(edge3, ShapesOpStatus::Or);
+            //     geom_loops_store0[face_index0].add_edge(edge4.clone(), ShapesOpStatus::Or);
+            //     geom_loops_store1[face_index1].add_edge(edge4, ShapesOpStatus::Or);
+            // }
+
             intersection_curve::intersection_curves(
                 surface0.clone(),
                 &polygon0,
@@ -558,6 +604,7 @@ where
                     }
                     let pedge = Edge::new(&pv0, &pv1, polyline);
                     let gedge = Edge::new(&gv0, &gv1, intersection_curve.into());
+                    // println!("Edge1: {:?} Edge2: {:?}",  &gedge, &pedge);
                     poly_loops_store0[face_index0].add_edge(pedge.clone(), status0);
                     geom_loops_store0[face_index0].add_edge(gedge.clone(), status0);
                     poly_loops_store1[face_index1].add_edge(pedge, status1);
@@ -566,6 +613,9 @@ where
                 Some(())
             })
         })?;
+    // println!("geom_loops_store0: {:?}", geom_loops_store0);
+    // println!("geom_loops_store1: {:?}", geom_loops_store1);
+    println!();
     Some(LoopsStoreQuadruple {
         geom_loops_store0,
         poly_loops_store0,

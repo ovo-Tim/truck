@@ -3,6 +3,7 @@
 use super::faces_classification::FacesClassification;
 use super::loops_store::*;
 use rustc_hash::FxHashMap as HashMap;
+use std::fmt::Debug;
 use std::ops::Deref;
 use truck_meshalgo::prelude::*;
 use truck_topology::*;
@@ -105,20 +106,25 @@ pub fn divide_faces<C, S>(
     tol: f64,
 ) -> Option<FacesClassification<Point3, C, S>>
 where
-    C: BoundedCurve<Point = Point3> + ParameterDivision1D<Point = Point3>,
-    S: Clone + SearchParameter<D2, Point = Point3>,
+    C: BoundedCurve<Point = Point3> + ParameterDivision1D<Point = Point3> + Debug,
+    S: Clone + SearchParameter<D2, Point = Point3> + Debug,
 {
     let mut res = FacesClassification::<Point3, C, S>::default();
     shell
         .iter()
         .zip(loops_store)
         .try_for_each(|(face, loops)| {
+            // println!("face: {:?}", face);
+            // println!("loops: {:?}", loops);
+            // println!();
             if loops
                 .iter()
                 .all(|wire| wire.status() == ShapesOpStatus::Unknown)
             {
                 res.push(face.clone(), ShapesOpStatus::Unknown);
             } else {
+                // println!("face: {:?}", face);
+                // println!("loops: {:?}", loops);
                 let vec = divide_one_face(face, loops, tol)?;
                 vec.into_iter()
                     .for_each(|(face, status)| res.push(face, status));
