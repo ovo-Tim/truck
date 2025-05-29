@@ -544,6 +544,18 @@ where C: ParametricCurve3D + Debug {
     }
 }
 
+fn troublesome_list<C>(wires: &BoundaryWire<Point3, C>, ifront: usize, iback: usize) -> Vec<usize> {
+    let mut troublesome = vec![];
+    if wires[ifront].front() == wires[iback].back(){
+        troublesome.push(ifront);
+        troublesome.push(iback);
+        if ifront > 0 && iback < wires.len() - 1{
+            troublesome.extend(troublesome_list(wires, ifront-1, iback+1));
+        }
+    }
+    troublesome
+}
+
 fn finalize_adjacent_to_coplanar_faces<C, S>(
     geom_loops_store: &mut LoopsStore<Point3, C>,
     face_index: usize,
@@ -552,8 +564,8 @@ where
     S: ParametricSurface3D + SearchNearestParameter<D2, Point = Point3> + Debug,
     C: Debug,
 {
-    // Z=1面のcoplanar面の辺が(0.5, 1, 1) と (1, 1, 1) 間にあると隣のY=1面ではこのようになり、
-    // divide_facesで失敗する
+    // If an edge of a coplanar face on the Z=1 face lies between (0.5, 1, 1) and (1, 1, 1),
+    // it appears this way on the adjacent Y=1 face, which causes divide_faces to fail.
     // Loop[0] with status: And
     //   Edges in loop:
     //   Edge: (0.5, 1, 1) -> (1, 1, 1)
@@ -566,19 +578,40 @@ where
     //   Edge: (1, 1, 0) -> (1, 1, 1)
     //   Edge: (1, 1, 1) -> (0.5, 1, 1)
 
-    let mut removed_indexes = vec![];
+    // let mut removed_indexes = vec![];
+    // geom_loops_store[face_index]
+    //     .iter()
+    //     .enumerate()
+    //     .for_each(|(idx, loop_)| {
+    //         // TODO 曲面の場合loop_.len() == 2とは限らない
+    //         // loop_の面積が0の場合削除のようにするのが正しいか？
+    //         if loop_.len() == 2 {
+    //             removed_indexes.push(idx);
+    //         }
+    //     });
+    // removed_indexes.iter().rev().for_each(|&idx| {
+    //     geom_loops_store[face_index].remove(idx);
+    // });
+
+    let mut remove_loops = vec![];
     geom_loops_store[face_index]
-        .iter()
+        .iter_mut()
         .enumerate()
-        .for_each(|(idx, loop_)| {
-            // TODO 曲面の場合loop_.len() == 2とは限らない
-            // loop_の面積が0の場合削除のようにするのが正しいか？
-            if loop_.len() == 2 {
-                removed_indexes.push(idx);
+        .for_each(|(iloop, loop_)| {
+            let mut remove_edge = vec![];
+            (0..loop_.len()-1).for_each(|iedge|{
+                remove_edge.extend(troublesome_list(loop_, iedge, iedge+1));
+            });
+            remove_edge.sort_unstable();
+            remove_edge.into_iter().rev().for_each(|index| {
+                loop_.remove(index);
+            });
+            if loop_.len() == 0{
+                remove_loops.push(iloop);
             }
         });
-    removed_indexes.iter().rev().for_each(|&idx| {
-        geom_loops_store[face_index].remove(idx);
+    remove_loops.into_iter().rev().for_each(|index| {
+        geom_loops_store[face_index].remove(index);
     });
 }
 
@@ -754,6 +787,9 @@ where
     for face_index1 in adjacent_to_coplanar_faces_index_1 {
         finalize_adjacent_to_coplanar_faces::<C, S>(&mut geom_loops_store1, face_index1);
     }
+
+    // geom_loops_store0[4][0].remove(8);
+    // geom_loops_store1[4][0].remove(8);
 
     Some(LoopsStoreQuadruple {
         geom_loops_store0,
