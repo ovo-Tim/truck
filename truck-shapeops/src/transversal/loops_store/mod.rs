@@ -615,6 +615,21 @@ where
     });
 }
 
+fn is_coplanar<S>(surface1: &S, surface2: &S) -> bool
+where
+    S: ParametricSurface3D + SearchNearestParameter<D2, Point = Point3>,
+{
+    let norm1 = surface1.normal(0.0, 0.0).normalize();
+    let norm2 = surface2.normal(0.0, 0.0).normalize();
+    if norm1 != norm2 {
+        return false;
+    }
+    if !(surface1.subs(0.0, 0.0) - surface2.subs(0.0, 0.0)).dot(norm1).so_small() {
+        return false;
+    }
+    true
+}
+
 pub fn create_loops_stores<C, S>(
     geom_shell0: &Shell<Point3, C, S>,
     poly_shell0: &Shell<Point3, PolylineCurve, Option<PolygonMesh>>,
@@ -669,6 +684,9 @@ where
             let surface1 = geom_shell1[face_index1].surface();
             let polygon0 = poly_shell0[face_index0].surface()?;
             let polygon1 = poly_shell1[face_index1].surface()?;
+            if is_coplanar(&surface0, &surface1){
+                return Some(());
+            }
             intersection_curve::intersection_curves(
                 surface0.clone(),
                 &polygon0,
@@ -781,12 +799,12 @@ where
         })?;
 
     // coplanar面の隣の面で辺に沿って発生する自明なループを削除
-    for face_index0 in adjacent_to_coplanar_faces_index_0 {
-        finalize_adjacent_to_coplanar_faces::<C, S>(&mut geom_loops_store0, face_index0);
-    }
-    for face_index1 in adjacent_to_coplanar_faces_index_1 {
-        finalize_adjacent_to_coplanar_faces::<C, S>(&mut geom_loops_store1, face_index1);
-    }
+    // for face_index0 in adjacent_to_coplanar_faces_index_0 {
+    //     finalize_adjacent_to_coplanar_faces::<C, S>(&mut geom_loops_store0, face_index0);
+    // }
+    // for face_index1 in adjacent_to_coplanar_faces_index_1 {
+    //     finalize_adjacent_to_coplanar_faces::<C, S>(&mut geom_loops_store1, face_index1);
+    // }
 
     // geom_loops_store0[4][0].remove(8);
     // geom_loops_store1[4][0].remove(8);
