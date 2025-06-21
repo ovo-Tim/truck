@@ -799,15 +799,12 @@ where
         })?;
 
     // coplanar面の隣の面で辺に沿って発生する自明なループを削除
-    // for face_index0 in adjacent_to_coplanar_faces_index_0 {
-    //     finalize_adjacent_to_coplanar_faces::<C, S>(&mut geom_loops_store0, face_index0);
-    // }
-    // for face_index1 in adjacent_to_coplanar_faces_index_1 {
-    //     finalize_adjacent_to_coplanar_faces::<C, S>(&mut geom_loops_store1, face_index1);
-    // }
-
-    // geom_loops_store0[4][0].remove(8);
-    // geom_loops_store1[4][0].remove(8);
+    for face_index0 in adjacent_to_coplanar_faces_index_0 {
+        finalize_adjacent_to_coplanar_faces::<C, S>(&mut geom_loops_store0, face_index0);
+    }
+    for face_index1 in adjacent_to_coplanar_faces_index_1 {
+        finalize_adjacent_to_coplanar_faces::<C, S>(&mut geom_loops_store1, face_index1);
+    }
 
     Some(LoopsStoreQuadruple {
         geom_loops_store0,
