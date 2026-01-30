@@ -12,13 +12,14 @@ keywords = ["truck", "graphics"]
 categories = ["graphics"]
 
 [dependencies]
-serde = { version = "1.0.219", features = ["derive"] }
-thiserror = "2.0.12"
+serde = { version = "1.0.228", features = ["derive"] }
+thiserror = "2.0.18"
 truck-base = { version = "0.5.0", path = "../truck-base" }
 truck-geotrait = { version = "0.4.0", path = "../truck-geotrait", features = ["derive"] }
 
 [dev-dependencies]
-proptest = "1.6.0"
+truck-geotrait = { version = "0.4.0", path = "../truck-geotrait", features = ["derive", "polynomial"] }
+proptest = { version = "1.9.0", features = ["attr-macro"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
-getrandom = { version = "0.2.16", features = ["js"] }
+getrandom = { version = "0.3.4", features = ["wasm_js"] }

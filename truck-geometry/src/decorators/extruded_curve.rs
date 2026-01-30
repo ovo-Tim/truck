@@ -27,6 +27,15 @@ where
     type Point = C::Point;
     type Vector = C::Vector;
     #[inline(always)]
+    fn der_mn(&self, m: usize, n: usize, u: f64, v: f64) -> Self::Vector {
+        match (m, n) {
+            (0, 0) => self.subs(u, v).to_vec(),
+            (0, 1) => self.vector,
+            (_, 0) => self.curve.der_n(m, u),
+            _ => C::Vector::zero(),
+        }
+    }
+    #[inline(always)]
     fn subs(&self, u: f64, v: f64) -> C::Point { self.curve.subs(u) + self.vector * v }
     #[inline(always)]
     fn uder(&self, u: f64, _: f64) -> C::Vector { self.curve.der(u) }
@@ -149,4 +158,30 @@ impl<C: Transformed<Matrix4>> Transformed<Matrix4> for ExtrudedCurve<C, Vector3>
             vector: trans.transform_vector(self.vector),
         }
     }
+}
+
+impl From<ExtrudedCurve<Line<Point3>, Vector3>> for Plane {
+    fn from(
+        ExtrudedCurve {
+            curve: Line(o, p),
+            vector,
+        }: ExtrudedCurve<Line<Point3>, Vector3>,
+    ) -> Self {
+        Self::new(o, p, o + vector)
+    }
+}
+
+impl ToSameGeometry<Plane> for ExtrudedCurve<Line<Point3>, Vector3> {
+    fn to_same_geometry(&self) -> Plane { (*self).into() }
+}
+
+#[test]
+fn extrude_line() {
+    let p = Point3::new(1.0, 2.0, 3.0);
+    let q = Point3::new(2.0, 3.0, 4.0);
+    let v = Vector3::new(-1.0, 1.0, -4.0);
+    let line = Line(p, q);
+    let extruded = ExtrudedCurve::by_extrusion(line, v);
+    let plane = Plane::new(p, q, p + v);
+    assert_near!(extruded.subs(0.3, 0.6), plane.subs(0.3, 0.6));
 }

@@ -12,7 +12,7 @@ fn default_shell_template() {
         format!(
             "ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('Shape Data from Truck'), '2;1');
+FILE_DESCRIPTION(('Shape Data from truck'), '2;1');
 FILE_NAME('', '{time_stamp}', (''), (''), 'truck', '', '');
 FILE_SCHEMA(('ISO-10303-042'));
 ENDSEC;
@@ -26,7 +26,7 @@ DATA;
 #7 = PRODUCT('','','', (#8));
 #8 = PRODUCT_CONTEXT('', #2, 'mechanical');
 #9 = PRODUCT_DEFINITION_CONTEXT('part definition', #2, 'design');
-#10 = ADVANCED_BREP_SHAPE_REPRESENTATION('', (#16), #11);
+#10 = SHAPE_REPRESENTATION('', (#16), #11);
 #11 = (
     GEOMETRIC_REPRESENTATION_CONTEXT(3)
     GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#15))
@@ -65,7 +65,7 @@ fn default_solid_template() {
         string,
         format!("ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('Shape Data from Truck'), '2;1');
+FILE_DESCRIPTION(('Shape Data from truck'), '2;1');
 FILE_NAME('', '{time_stamp}', (''), (''), 'truck', '', '');
 FILE_SCHEMA(('ISO-10303-042'));
 ENDSEC;
@@ -79,7 +79,7 @@ DATA;
 #7 = PRODUCT('','','', (#8));
 #8 = PRODUCT_CONTEXT('', #2, 'mechanical');
 #9 = PRODUCT_DEFINITION_CONTEXT('part definition', #2, 'design');
-#10 = ADVANCED_BREP_SHAPE_REPRESENTATION('', (#16), #11);
+#10 = SHAPE_REPRESENTATION('', (#16), #11);
 #11 = (
     GEOMETRIC_REPRESENTATION_CONTEXT(3)
     GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#15))
@@ -126,7 +126,7 @@ fn custom_header_template() {
         format!(
             "ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('Shape Data from Truck'), '2;1');
+FILE_DESCRIPTION(('Shape Data from truck'), '2;1');
 FILE_NAME('AMAZING_PRODUCT.step', '{time_stamp}', ('Tensai', 'Genius', 'Bokusama'), \
 ('Great Awesome Co. Ltd.', 'Univ. Clever Genius', 'Senkai'), 'truck', 'Kusanagi Sword', 'IT'S ME!');
 FILE_SCHEMA(('ISO-10303-042'));
@@ -141,7 +141,7 @@ DATA;
 #7 = PRODUCT('','','', (#8));
 #8 = PRODUCT_CONTEXT('', #2, 'mechanical');
 #9 = PRODUCT_DEFINITION_CONTEXT('part definition', #2, 'design');
-#10 = ADVANCED_BREP_SHAPE_REPRESENTATION('', (#16), #11);
+#10 = SHAPE_REPRESENTATION('', (#16), #11);
 #11 = (
     GEOMETRIC_REPRESENTATION_CONTEXT(3)
     GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#15))

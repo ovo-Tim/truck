@@ -17,7 +17,7 @@ async fn init_default_device(
     let backends = Backends::PRIMARY;
     #[cfg(feature = "webgl")]
     let backends = Backends::all();
-    let instance = Instance::new(InstanceDescriptor {
+    let instance = Instance::new(&InstanceDescriptor {
         backends,
         ..Default::default()
     });
@@ -41,25 +41,20 @@ async fn init_default_device(
         .expect("Failed to find an appropriate adapter");
 
     let (device, queue) = adapter
-        .request_device(
-            &DeviceDescriptor {
-                required_features: Default::default(),
-                memory_hints: MemoryHints::Performance,
-                #[cfg(not(feature = "webgl"))]
-                required_limits: Limits::downlevel_defaults().using_resolution(adapter.limits()),
-                #[cfg(feature = "webgl")]
-                required_limits: Limits::downlevel_webgl2_defaults(),
-                label: None,
-            },
-            None,
-        )
+        .request_device(&DeviceDescriptor {
+            required_features: Default::default(),
+            memory_hints: MemoryHints::Performance,
+            #[cfg(not(feature = "webgl"))]
+            required_limits: Limits::downlevel_defaults().using_resolution(adapter.limits()),
+            #[cfg(feature = "webgl")]
+            required_limits: Limits::downlevel_webgl2_defaults(),
+            label: None,
+            trace: Default::default(),
+            experimental_features: ExperimentalFeatures::disabled(),
+        })
         .await
         .expect("Failed to create device");
-    let device_handler = DeviceHandler {
-        adapter: Arc::new(adapter),
-        device: Arc::new(device),
-        queue: Arc::new(queue),
-    };
+    let device_handler = DeviceHandler::new(adapter, device, queue);
     let window_handler = window.map(|window| WindowHandler {
         window,
         surface: Arc::new(surface.unwrap()),
@@ -70,11 +65,7 @@ async fn init_default_device(
 impl DeviceHandler {
     /// constructor
     #[inline(always)]
-    pub const fn new(
-        adapter: Arc<Adapter>,
-        device: Arc<Device>,
-        queue: Arc<Queue>,
-    ) -> DeviceHandler {
+    pub const fn new(adapter: Adapter, device: Device, queue: Queue) -> DeviceHandler {
         DeviceHandler {
             adapter,
             device,
@@ -83,13 +74,13 @@ impl DeviceHandler {
     }
     /// Returns the reference of the adapter.
     #[inline(always)]
-    pub const fn adapter(&self) -> &Arc<Adapter> { &self.adapter }
+    pub const fn adapter(&self) -> &Adapter { &self.adapter }
     /// Returns the reference of the device.
     #[inline(always)]
-    pub const fn device(&self) -> &Arc<Device> { &self.device }
+    pub const fn device(&self) -> &Device { &self.device }
     /// Returns the reference of the queue.
     #[inline(always)]
-    pub const fn queue(&self) -> &Arc<Queue> { &self.queue }
+    pub const fn queue(&self) -> &Queue { &self.queue }
 
     /// Creates default device handler.
     pub async fn default_device() -> Self { init_default_device(None).await.0 }
@@ -254,13 +245,13 @@ impl SceneDescriptor {
 #[derive(Debug)]
 pub struct SceneDescriptorMut<'a>(&'a mut Scene);
 
-impl Deref for SceneDescriptorMut<'_> {
+impl std::ops::Deref for SceneDescriptorMut<'_> {
     type Target = SceneDescriptor;
     #[inline(always)]
     fn deref(&self) -> &SceneDescriptor { &self.0.scene_desc }
 }
 
-impl DerefMut for SceneDescriptorMut<'_> {
+impl std::ops::DerefMut for SceneDescriptorMut<'_> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut SceneDescriptor { &mut self.0.scene_desc }
 }
@@ -378,13 +369,17 @@ impl Scene {
     #[inline(always)]
     pub const fn device_handler(&self) -> &DeviceHandler { &self.device_handler }
 
+    /// Returns the reference of the adapter.
+    #[inline(always)]
+    pub const fn dapter(&self) -> &Adapter { &self.device_handler.adapter }
+
     /// Returns the reference of the device.
     #[inline(always)]
-    pub const fn device(&self) -> &Arc<Device> { &self.device_handler.device }
+    pub const fn device(&self) -> &Device { &self.device_handler.device }
 
     /// Returns the reference of the queue.
     #[inline(always)]
-    pub const fn queue(&self) -> &Arc<Queue> { &self.device_handler.queue }
+    pub const fn queue(&self) -> &Queue { &self.device_handler.queue }
 
     /// Returns the elapsed time since the scene was created.
     #[inline(always)]
@@ -707,6 +702,7 @@ impl Scene {
                         load: LoadOp::Clear(self.scene_desc.studio.background),
                         store: StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
                 depth_stencil_attachment: depth_view
                     .as_ref()
@@ -754,15 +750,15 @@ impl Scene {
         });
         let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
         encoder.copy_texture_to_buffer(
-            ImageCopyTexture {
+            TexelCopyTextureInfo {
                 texture: &texture,
                 mip_level: 0,
                 origin: Origin3d::ZERO,
                 aspect: TextureAspect::All,
             },
-            ImageCopyBuffer {
+            TexelCopyBufferInfo {
                 buffer: &buffer,
-                layout: ImageDataLayout {
+                layout: TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(width * 4),
                     rows_per_image: Some(height),
@@ -778,7 +774,11 @@ impl Scene {
         let buffer_slice = buffer.slice(..);
         let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
         buffer_slice.map_async(MapMode::Read, move |v| sender.send(v).unwrap());
-        device.poll(Maintain::Wait);
+        let poll_type = PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        };
+        device.poll(poll_type).unwrap();
         match receiver.receive().await {
             Some(Ok(_)) => buffer_slice.get_mapped_range().iter().copied().collect(),
             Some(Err(e)) => panic!("{}", e),

@@ -37,6 +37,7 @@ args = [
 	"-p", "truck-shapeops",
 	"-p", "truck-stepio",
 	"--features", "derive",
+	"--features", "polynomial",
 	"--", "--nocapture",
 ]
 
@@ -58,6 +59,7 @@ args = [
 	"-p", "truck-shapeops",
 	"-p", "truck-stepio",
 	"--features", "derive",
+	"--features", "polynomial",
 	"--", "--nocapture",
 ]
 
@@ -66,16 +68,6 @@ description = "Tests using GPU"
 command = "cargo"
 args = [
 	"test",
-	"-p", "truck-platform",
-	"-p", "truck-rendimpl",
-	"--", "--nocapture", "--test-threads=1",
-]
-
-[tasks.gpu-release-build-test]
-description = "Tests using GPU"
-command = "cargo"
-args = [
-	"test", "--release",
 	"-p", "truck-platform",
 	"-p", "truck-rendimpl",
 	"--", "--nocapture", "--test-threads=1",
@@ -97,17 +89,17 @@ dependencies = ["clean", "cpu-test"]
 dependencies = ["clean", "cpu-nightly-test"]
 
 [tasks.ci-gpu-test]
-dependencies = ["clean", "gpu-release-build-test", "collect-gpu-artifacts"]
+dependencies = ["clean", "gpu-test", "collect-gpu-artifacts"]
 
 [tasks.wasm-build]
 description = "Build to wasm-target"
-env = { "RUSTFLAGS" = "--cfg=web_sys_unstable_apis" }
+env = { "RUSTFLAGS" = "--cfg=web_sys_unstable_apis --cfg=getrandom_backend=\"wasm_js\"" }
 command = "cargo"
 args = ["build", "--target=wasm32-unknown-unknown"]
 
 [tasks.webgl-build]
 description = "Build to wasm-target with webgl feature"
-env = { "RUSTFLAGS" = "--cfg=web_sys_unstable_apis" }
+env = { "RUSTFLAGS" = "--cfg=web_sys_unstable_apis --cfg=getrandom_backend=\"wasm_js\"" }
 command = "cargo"
 args = [
 	"build",
@@ -117,12 +109,13 @@ args = [
 
 [tasks.build-wgpu-examples]
 description = "Build wasms"
-env = { "RUSTFLAGS" = "--cfg=web_sys_unstable_apis" }
+env = { "RUSTFLAGS" = "--cfg=web_sys_unstable_apis --cfg=getrandom_backend=\"wasm_js\"" }
 command = "cargo"
 args = ["run", "--bin", "example-pages-generator"]
 
 [tasks.js-test]
 description = "test for js"
+env = { "RUSTFLAGS" = "--cfg=getrandom_backend=\"wasm_js\"" }
 script = [
 	"cd truck-js",
 	"wasm-pack build --target web",
@@ -131,6 +124,7 @@ script = [
 
 [tasks.adhoc-viewer]
 description = "build adhoc viewer"
+env = { "RUSTFLAGS" = "--cfg=getrandom_backend=\"wasm_js\"" }
 script_runner = "@shell"
 script = [
 	"cd truck-js",
